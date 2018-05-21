@@ -103,8 +103,8 @@ ls /home/[user]/.gcp
 
 ## Authors
 
-* **Arnold Cabreza** - *Initial repo*
+* **** - *Initial repo*
 
-## Lincense
+## License
 
 This project is licensed under the Apache License - see the [LICENSE.md](LICENSE.md) file for details
