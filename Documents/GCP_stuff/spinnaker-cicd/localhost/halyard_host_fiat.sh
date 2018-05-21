@@ -52,7 +52,7 @@ hal config provider docker-registry account add my-gcr-account \
 --username _json_key \
 --repositories $PROJECT/sample-app
 
-#Configure GKE Provider 
+#Configure GKE Provider
 #The following will need to be executed for each cluster
 
 gcloud container clusters get-credentials $GKE_CLUSTER_NAME  --project=$PROJECT --zone $GKE_CLUSTER_ZONE
@@ -86,21 +86,21 @@ hal config deploy edit \
 
 # using oauth2
 
-CLIENT_ID=1090327584986-m7jhc1scev8fb49vdhukg8e59nelvmpo.apps.googleusercontent.com
-CLIENT_SECRET=3J1iLM_rVIx5Fa8xF1G5IXsM
+CLIENT_ID=some_number_google.com
+CLIENT_SECRET=Client code
 PROVIDER=google
 
 hal config security authn oauth2 edit \
 --client-id $CLIENT_ID \
 --client-secret $CLIENT_SECRET \
---provider $PROVIDER 
+--provider $PROVIDER
 
 hal config security authn oauth2 enable
 
-#Google groups via a G Suite Account 
+#Google groups via a G Suite Account
 
-ADMIN=vjraj@gflocks.com              # An administrator's email address
-CREDENTIALS=/home/paia/creds/gke-multi-container-service-e1df93c7992b.json   # The downloaded service account credentials
+ADMIN=domain@org.com              # An administrator's email address
+CREDENTIALS=client.json   # The downloaded service account credentials
 DOMAIN=gflocks.com                 # Your organization's domain.
 
 hal config security authz google edit \
@@ -140,7 +140,3 @@ hal config security ui edit \
 hal config security api edit \
   --override-base-url http://localhost:8084
 hal deploy apply
-
-
-
-
