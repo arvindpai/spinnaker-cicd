@@ -7,6 +7,13 @@ GKE_CLUSTER_NAME=shared-services
 GKE_CLUSTER_ZONE=us-central1-f
 POSTFIX=$1
 
+#Private cluster
+CLUSTER_2_NAME=pr-clust-2
+GCP_PROJECT_2=deploy-manifest-poc
+GKE_CLUSTER_2_ZONE=us-central1-f
+CLUSTER_2_TOKEN=${CLUSTER_2_NAME}_token.txt
+
+
 #Project where GKE cluster resides
 GCP_PROJECT=$(gcloud config get-value project)
 SPIN_SA=spinnaker-sa-$POSTFIX
@@ -18,7 +25,7 @@ GCS_TEMPLATE=gcs-jinja.json
 CLUSTER_NAME=$GKE_CLUSTER_NAME-$POSTFIX
 CLUSTER_TOKEN=${CLUSTER_NAME}_token.txt
 SPINNAKER_SA=$SPIN_SA_KEY
-IMAGE_REGISTRY=$PROJECT/sample-code
+IMAGE_REGISTRY=$PROJECT/sample-app
 TOPIC=topic-$CLUSTER_NAME
 SUBSCRIPTION=subs-$CLUSTER_NAME
 
@@ -76,16 +83,32 @@ provider_setup () {
     kubectl config set-credentials $CURRENT_CONTEXT --token $(cat $CLUSTER_TOKEN)
 
     hal config provider kubernetes account add $CLUSTER_NAME \
-        --docker-registries $GCR_ACCOUNT \
-        --context $(kubectl config current-context) \
-        --provider-version v2
+       --docker-registries $GCR_ACCOUNT \
+       --context $(kubectl config current-context)
+       --provider-version v2
 
-    hal config provider kubernetes enable
+  #hal config provider kubernetes enable
 
     #Only needed if Halyard is to be installed on GKE
     hal config deploy edit \
         --account-name $CLUSTER_NAME \
         --type distributed
+}
+
+add_private_cluster () {
+
+    gcloud container clusters get-credentials $CLUSTER_2_NAME  --project=$GCP_PROJECT_2 --zone $GKE_CLUSTER_2_ZONE
+
+    #Set credentials with the token that was created for Spinnaker
+    CURRENT_CONTEXT=`kubectl config current-context`
+
+    kubectl config set-credentials $CURRENT_CONTEXT --token $(cat $CLUSTER_2_TOKEN)
+
+    hal config provider kubernetes account add $CLUSTER_2_NAME \
+       --docker-registries $GCR_ACCOUNT \
+       --context $(kubectl config current-context)
+       --provider-version v2
+
 }
 
 # Setup artifact account
@@ -222,6 +245,9 @@ gcr_setup
 
 # Configure GKE provider
 provider_setup
+
+#Configure second cluster
+add_private_cluster
 
 # Setup artifact account
 setup_artifact_account

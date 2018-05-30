@@ -8,14 +8,14 @@
 #Google Pub/Sub API
 #Kubernetes Engine API
 
-PROJECT=deploy-manifest-poc
+PROJECT=gke-test1
 GCP_PROJECT=$(gcloud config get-value project)
 RESOURCE_ROOT=~/.gcp
 #Choose desired zone and GKE cluster name
 GKE_ZONE=us-central1-f
 GKE_NAME=shared-services
 # Make sure the version configured is supported in the zone above
-GKE_VERSION=1.9.7-gke.0
+GKE_VERSION=1.9.7-gke.1
 HALYARD_SCRIPT=setup-halyard-host
 GCS_TEMPLATE=gcs-jinja.json
 
@@ -31,6 +31,11 @@ CLUSTER_RESOURCE=$RESOURCE_ROOT/$CLUSTER_NAME
 SPIN_SA=spinnaker-sa-$POSTFIX
 SPIN_SA_KEY=spinnaker-sa.json
 HALYARD_SA=halyard-sa-$POSTFIX
+
+#Private cluster
+CLUSTER_2_NAME=pr-clust-2
+GCP_PROJECT_2=deploy-manifest-poc
+GKE_CLUSTER_2_ZONE=us-central1-f
 
 # Create the Halyard vm to manage the spinnaker installation and other
 # stack admin tasks
@@ -117,11 +122,32 @@ create_gke_cluster () {
     fi
 }
 
+
+configure_cluster_2 () {
+    gcloud container clusters get-credentials $CLUSTER_2_NAME \
+            --zone=$GKE_CLUSTER_2_ZONE --project=$GCP_PROJECT_2
+
+    kubectl create serviceaccount spinnaker-service-account
+
+    kubectl create clusterrolebinding \
+            --user system:serviceaccount:default:spinnaker-service-account \
+            spinnaker-role \
+            --clusterrole cluster-admin
+
+    SERVICE_ACCOUNT_TOKEN=`kubectl get serviceaccounts spinnaker-service-account -o jsonpath='{.secrets[0].name}'`
+
+    kubectl get secret $SERVICE_ACCOUNT_TOKEN -o jsonpath='{.data.token}' | base64 --decode > $CLUSTER_RESOURCE/${CLUSTER_2_NAME}_token.txt
+        
+}
+
 # Assign role bindings for a service account; takes a list of roles
 assign_role_bindings () {
     for role in $2; do
         echo "Assigning role $role to $1"
         gcloud projects add-iam-policy-binding $GCP_PROJECT \
+            --member serviceAccount:$1 --role $role
+        
+        gcloud projects add-iam-policy-binding $GCP_PROJECT_2 \
             --member serviceAccount:$1 --role $role
     done
 }
@@ -163,6 +189,7 @@ copy_resources () {
     done
     if [ $? -eq 0 ]; then
         gcloud compute scp --zone $GKE_ZONE $CLUSTER_RESOURCE/${CLUSTER_NAME}_token.txt $HALYARD_HOST:~/
+        gcloud compute scp --zone $GKE_ZONE $CLUSTER_RESOURCE/${CLUSTER_2_NAME}_token.txt $HALYARD_HOST:~/
         gcloud compute scp --zone $GKE_ZONE ./${HALYARD_SCRIPT}.sh $HALYARD_HOST:~/
         gcloud compute scp --zone $GKE_ZONE ./${GCS_TEMPLATE} $HALYARD_HOST:~/
     else
@@ -184,6 +211,9 @@ gcloud config set project $PROJECT
 
 #GKE Setup
 create_gke_cluster
+
+#Configure second cluster
+configure_cluster_2
 
 #Halyard Setup
 
