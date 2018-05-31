@@ -19,6 +19,7 @@ GCP_PROJECT=$(gcloud config get-value project)
 SPIN_SA=spinnaker-sa-$POSTFIX
 SPIN_SA_KEY=spinnaker-sa.json
 PROJECT=gke-test1
+PROJECT1=deploy-manifest-poc
 MSG_FORMAT="GCS"
 BUCKET=spinnaker-data-$POSTFIX
 GCS_TEMPLATE=gcs-jinja.json
@@ -26,6 +27,7 @@ CLUSTER_NAME=$GKE_CLUSTER_NAME-$POSTFIX
 CLUSTER_TOKEN=${CLUSTER_NAME}_token.txt
 SPINNAKER_SA=$SPIN_SA_KEY
 IMAGE_REGISTRY=$PROJECT/sample-app
+IMAGE_REGISTRY1=$PROJECT1/sample-app
 TOPIC=topic-$CLUSTER_NAME
 SUBSCRIPTION=subs-$CLUSTER_NAME
 
@@ -68,7 +70,8 @@ gcr_setup () {
         --password-file $SPINNAKER_SA \
         --username _json_key \
         --address gcr.io \
-        --repositories $IMAGE_REGISTRY
+        --repositories $IMAGE_REGISTRY \
+        --repositories $IMAGE_REGISTRY1
 }
 
 # Configure GKE provider
@@ -85,11 +88,12 @@ provider_setup () {
     hal config provider kubernetes account add $CLUSTER_NAME \
        --docker-registries $GCR_ACCOUNT \
        --context $(kubectl config current-context)
-       --provider-version v2
 
-  #hal config provider kubernetes enable
 
-    #Only needed if Halyard is to be installed on GKE
+  hal config provider kubernetes enable
+
+  # Edit Spinnaker’s deployment footprint and configuration
+# https://www.spinnaker.io/reference/halyard/commands/#hal-config-deploy-edit
     hal config deploy edit \
         --account-name $CLUSTER_NAME \
         --type distributed
@@ -107,8 +111,6 @@ add_private_cluster () {
     hal config provider kubernetes account add $CLUSTER_2_NAME \
        --docker-registries $GCR_ACCOUNT \
        --context $(kubectl config current-context)
-       --provider-version v2
-
 }
 
 # Setup artifact account

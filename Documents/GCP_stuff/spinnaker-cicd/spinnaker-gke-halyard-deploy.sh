@@ -132,12 +132,12 @@ configure_cluster_2 () {
     kubectl create clusterrolebinding \
             --user system:serviceaccount:default:spinnaker-service-account \
             spinnaker-role \
-            --clusterrole cluster-admin
+            --clusterrole cluster-admin 
 
     SERVICE_ACCOUNT_TOKEN=`kubectl get serviceaccounts spinnaker-service-account -o jsonpath='{.secrets[0].name}'`
 
     kubectl get secret $SERVICE_ACCOUNT_TOKEN -o jsonpath='{.data.token}' | base64 --decode > $CLUSTER_RESOURCE/${CLUSTER_2_NAME}_token.txt
-        
+
 }
 
 # Assign role bindings for a service account; takes a list of roles
@@ -146,7 +146,7 @@ assign_role_bindings () {
         echo "Assigning role $role to $1"
         gcloud projects add-iam-policy-binding $GCP_PROJECT \
             --member serviceAccount:$1 --role $role
-        
+
         gcloud projects add-iam-policy-binding $GCP_PROJECT_2 \
             --member serviceAccount:$1 --role $role
     done
