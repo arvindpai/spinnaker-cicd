@@ -1,0 +1,8 @@
+steps:
+  - name: "gcr.io/cloud-builders/go"
+    args: ["install", "source.developers.google.com/p/gke-poc-test2/r/gcp-cd-codelabs"]
+    env: ["PROJECT_ROOT=source.developers.google.com/p/gke-poc-test2/r/gcp-cd-codelabs"]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "gcr.io/gke-poc-test2/gcp-cd-codelabs:$TAG_NAME", "-f", "Dockerfile", "."]
+images:
+  - "gcr.io/gke-poc-test2/gcp-cd-codelabs:$TAG_NAME"
